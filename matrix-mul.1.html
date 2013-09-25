@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Matrix-mul test</title>
+</head>
+<body>
+    <h1 id="benchmark"></h1>
+    <script>
+        (function () {
+            var VMath = {
+                m43BuildRandom : function m43BuildRandomFn(dst)
+                {
+                    dst[0] = 1.001;
+                    dst[1] = 0.001;
+                    dst[2] = 0.001;
+                    dst[3] = 0.001;
+                    dst[4] = 1.001;
+                    dst[5] = 0.001;
+                    dst[6] = 0.001;
+                    dst[7] = 0.001;
+                    dst[8] = 1.001;
+                    dst[9] = 0.001;
+                    dst[10] = 0.001;
+                    dst[11] = 0.001;
+                },
+
+                m43Mul : function m43MulFn(a, b, dst)
+                {
+                    var a0  = a[0];
+                    var a1  = a[1];
+                    var a2  = a[2];
+                    var a3  = a[3];
+                    var a4  = a[4];
+                    var a5  = a[5];
+                    var a6  = a[6];
+                    var a7  = a[7];
+                    var a8  = a[8];
+                    var a9  = a[9];
+                    var a10 = a[10];
+                    var a11 = a[11];
+
+                    var b0  = b[0];
+                    var b1  = b[1];
+                    var b2  = b[2];
+                    var b3  = b[3];
+                    var b4  = b[4];
+                    var b5  = b[5];
+                    var b6  = b[6];
+                    var b7  = b[7];
+                    var b8  = b[8];
+
+                    dst[0] =  (b0 * a0 + b3 * a1 + b6 * a2);
+                    dst[1] =  (b1 * a0 + b4 * a1 + b7 * a2);
+                    dst[2] =  (b2 * a0 + b5 * a1 + b8 * a2);
+                    dst[3] =  (b0 * a3 + b3 * a4 + b6 * a5);
+                    dst[4] =  (b1 * a3 + b4 * a4 + b7 * a5);
+                    dst[5] =  (b2 * a3 + b5 * a4 + b8 * a5);
+                    dst[6] =  (b0 * a6 + b3 * a7 + b6 * a8);
+                    dst[7] =  (b1 * a6 + b4 * a7 + b7 * a8);
+                    dst[8] =  (b2 * a6 + b5 * a7 + b8 * a8);
+                    dst[9]  = (b0 * a9 + b3 * a10 + b6 * a11 + b[9]);
+                    dst[10] = (b1 * a9 + b4 * a10 + b7 * a11 + b[10]);
+                    dst[11] = (b2 * a9 + b5 * a10 + b8 * a11 + b[11]);
+                }
+            };
+            
+            var numMatrices = 1000;
+            var matrices = new Array(1 + numMatrices);
+
+            function initializeTest(matrices, maxn)
+            {
+                var n;
+                for (n = 0; n < maxn; n += 1)
+                {
+                    matrices[n] = new Float32Array(12);
+                }
+
+                matrices[maxn] = new Float32Array(12);
+                VMath.m43BuildRandom(matrices[maxn]);
+            }
+
+            function doTest(matrices, maxn, tests)
+            {
+                var m43BuildRandom = VMath.m43BuildRandom;
+                var m43Mul = VMath.m43Mul;
+                var n;
+
+                do
+                {
+                    for (n = 0; n < maxn; n += 1)
+                    {
+                        m43BuildRandom(matrices[n]);
+                    }
+
+                    for (n = 0; n < maxn; n += 1)
+                    {
+                        m43Mul(matrices[n], matrices[maxn], matrices[n]);
+                    }
+                }
+                while (--tests);
+            }
+
+            initializeTest(matrices, numMatrices);
+
+            var benchmarkElement = document.getElementById("benchmark");
+            var values = [];
+            var lastValue = -1;
+
+            var getTime = Date.now;
+            var performance = window.performance;
+            if (performance)
+            {
+                if (performance.now)
+                {
+                    getTime = function getTimeFn()
+                    {
+                        return performance.now();
+                    };
+                }
+                else if (performance.webkitNow)
+                {
+                    getTime = function getTimeFn()
+                    {
+                        return performance.webkitNow();
+                    };
+                }
+            }
+
+            function test()
+            {
+                var tests = 1000;
+
+                var startTime = getTime();
+
+                doTest(matrices, numMatrices, tests);
+
+                var value = (getTime() - startTime);
+
+                lastValue += 1;
+                if (lastValue >= 21)
+                {
+                    lastValue = 0;
+                }
+                values[lastValue] = value;
+
+                var sortedValues = values.slice();
+                sortedValues.sort(function (a, b) { return (a - b); });
+                var median = sortedValues[(sortedValues.length >> 1)];
+
+                benchmarkElement.textContent = median.toFixed(0);
+
+                window.setTimeout(test, 100);
+            }
+            window.setTimeout(test, 100);
+        }) ();
+    </script>
+</body>
+</html>
